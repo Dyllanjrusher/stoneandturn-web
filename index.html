@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#0d1011"><title>Hex Go · Gridroom</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Cpath fill='%2368e5be' d='m20 1 17 9v20l-17 9-17-9V10z'/%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css"></head>
+<body>
+<header><div class="header-inner"><a href="#play" class="brand" aria-label="Gridroom home"><svg viewBox="0 0 40 40" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.6" stroke-linejoin="round"><path d="m20 3 15 8.5v17L20 37 5 28.5v-17Z"/><path d="m5 11.5 15 8.7 15-8.7M20 20v17M12.5 7.3l15 8.7v9l-7.5 4.5"/></g></svg>Gridroom</a><span class="divider"></span><button class="library-button flat" id="library"><i data-icon="grid"></i>Game library</button><button id="sound" class="sound flat" aria-label="Enable sound" title="Enable sound"><i data-icon="muted"></i></button></div></header>
+<main id="play">
+<section class="intro"><div><div class="eyebrow"><span class="short-line"></span> STRATEGY GAME</div><h1>Hex Go<span>.</span></h1></div><button class="outline" id="rules"><i data-icon="book"></i> How to play</button></section>
+<div class="layout">
+<section class="board-panel panel" aria-label="Game board"><div class="panel-head"><h2><i data-icon="hex"></i> Game board</h2><span class="live"><b></b> Local match</span></div>
+<div class="board-surface"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><svg id="board" role="group" aria-label="Hex Go board. Use arrow keys to explore, Enter to play."></svg></div>
+<div class="board-foot"><span><i data-icon="layers"></i><span id="sizeText"></span></span><span id="moveNumber"></span></div></section>
+<aside><section class="panel match"><div class="panel-head"><h2><i data-icon="sliders"></i>Match panel</h2></div><div class="match-body"><div class="turn-banner"><span id="turnStone" class="stone black"></span><div><div class="micro" id="turnLabel">CURRENT TURN</div><strong id="turn"></strong></div></div>
+<div class="capt-heading"><span class="micro">CAPTURES</span><span class="hairline"></span></div>
+<div class="captures"><div><span class="stone black"></span>Black<strong id="blackCaptures">0</strong></div><div><span class="stone white"></span>White<strong id="whiteCaptures">0</strong></div></div>
+<button class="primary" id="pass"><i data-icon="pass"></i>Pass turn</button><div class="split"><button class="outline" id="undo"><i data-icon="undo"></i>Undo</button><button class="outline" id="new"><i data-icon="plus"></i>New game</button></div></div></section>
+<section class="panel history"><div class="panel-head"><h2><i data-icon="history"></i>Move history</h2><span id="count" class="count">0</span></div><div id="history"></div></section></aside></div>
+<div id="notice" role="status" aria-live="polite"></div></main>
+<dialog id="modal"><div class="modal-head"><h2 id="dialogTitle"></h2><button class="flat" id="close" aria-label="Close dialog"><i data-icon="close"></i></button></div><div id="dialogBody"></div></dialog>
+<script type="module" src="./games/hex-go/app.js"></script></body></html>
