@@ -1,4 +1,5 @@
 import { newGame, play, replay, score, BONUS } from './rules.js';
+import { OnlineMatch, currentRoom, hostSeat, guestSeat, parseRoom, roomURL } from './online.js';
 import { games } from '../../catalog.js';
 
 const $ = id => document.getElementById(id);
@@ -22,6 +23,8 @@ document.querySelectorAll('i[data-icon]').forEach(i => { i.outerHTML = icon(i.da
 const cap = text => text[0].toUpperCase() + text.slice(1);
 const saveKey = 'gridroom.hex-go.v1';
 let game = newGame();
+let online = null;
+let localGame = null;
 let sound = false;
 let audio;
 let timer;
@@ -116,7 +119,25 @@ function render() {
   $('turnLabel').textContent = game.ended ? 'FINAL RESULT' : 'CURRENT TURN';
   $('turn').textContent = cap(current)+(game.ended ? ' wins' : ' to play');
   $('pass').innerHTML = icon(game.ended?'layers':'pass')+(game.ended?'View score':'Pass turn');
-  $('undo').disabled = !num;
+  $('undo').disabled = !num || !!online;
+  $('undo').hidden = !!online;
+  $('new').innerHTML = online ? icon('close')+'Leave room' : icon('plus')+'New game';
+  $('new').parentElement.classList.toggle('in-room', !!online);
+  $('online').textContent = online ? 'Room details' : 'Play online';
+  $('matchType').textContent = online ? 'Online match' : 'Local match';
+  $('roomBar').hidden = !online;
+  $('pass').disabled = !!online && !game.ended && !online.myTurn;
+  if (online) {
+    $('seatLabel').textContent = 'You play ' + cap(online.record.seat);
+    $('roomStatus').textContent = online.detail;
+    if (!game.ended) {
+      $('turnLabel').textContent = online.phase === 'ready' ? (online.myTurn ? 'YOUR TURN' : 'OPPONENT’S TURN') : 'ONLINE ROOM';
+      if (online.phase !== 'ready') {
+        const titles = { waiting:'Waiting for White', error:'Room unavailable', reconnecting:'Reconnecting' };
+        $('turn').textContent = titles[online.phase] || 'Connecting players';
+      }
+    }
+  }
   $('count').textContent = num;
   $('history').innerHTML = num ? game.moves.map((m,j) =>
     '<div class="history-row"><span class="move-index">'+String(j+1).padStart(2,'0')+'</span><span class="stone '+m.color+'"></span>'+cap(m.color)+'<span class="coord">'+(m.type==='pass'?'Pass':game.cells[m.cell].name+(m.taken?' · captured '+m.taken:''))+'</span></div>'
@@ -133,6 +154,10 @@ function result() {
   $('review').onclick = () => $('modal').close();
 }
 function submit(action) {
+  if (online) {
+    try { online.move(action); } catch (err) { notice(err.message); }
+    return;
+  }
   try { game = play(game, action); } catch (error) { notice(error.message); return; }
   clickSound(game.turn==='black'?480:360);
   save(); render();
@@ -163,15 +188,20 @@ board.onkeydown = e => {
 };
 $('pass').onclick = () => game.ended ? result() : submit({ type: 'pass' });
 $('undo').onclick = () => {
-  if (!game.moves.length) return;
+  if (online || !game.moves.length) return;
   game = replay(game.side, game.moves.slice(0,-1)); save(); render(); notice('Last turn undone. '+cap(game.turn)+' to play.');
 };
 $('new').onclick = () => {
+  if (online) {
+    show('Leave this room?', '<p>Your local board will reopen. Refreshing this tab instead keeps your seat and match history.</p><button class="primary" id="leave">Leave room</button>');
+    $('leave').onclick = leaveRoom;
+    return;
+  }
   show('New game','<p>Start a fresh local match for two players.'+(game.moves.length?' This replaces the current match.':'')+'</p><label for="size">Board size</label><select id="size"><option value="4">Small · 37 hexes</option><option value="5">Standard · 61 hexes</option><option value="6">Large · 91 hexes</option></select><button class="primary" id="start">Start game</button>');
   $('size').value = game.side;
   $('start').onclick = () => { game=newGame(Number($('size').value)); focusIndex=undefined; save(); render(); $('modal').close(); notice('New match. Black to play.'); };
 };
-$('rules').onclick = () => show('How to play','<p>Claim the most area on the hex board. Share one device and take turns, starting with Black.</p><ol><li><strong>Place a stone.</strong> Choose any empty hex. Friendly stones that share an edge form a group.</li><li><strong>Keep a liberty.</strong> Each empty hex touching a group by an edge is a liberty. Fill its last liberty to capture the entire group. The edge of the board provides no liberties.</li><li><strong>Capture first.</strong> Remove surrounded enemy groups, then check your own. Your group must have a liberty, and a placement must leave a board position that has never appeared in this match.</li><li><strong>Pass to finish.</strong> Play out disputed captures before passing. Two consecutive passes end the match. Stones still on the board count as alive.</li><li><strong>Count area.</strong> Score one point per stone and per empty hex in a connected region touching only your color. Mixed or unbordered regions score zero. Captures do not add points. White receives half a point to break ties.</li></ol><p>Keyboard play uses the arrow keys and Enter. Hold Shift with Up or Down for the other diagonal.</p>');
+$('rules').onclick = () => show('How to play','<p>Claim the most area on the hex board. Play on one device or invite a friend online. Black takes the first turn.</p><ol><li><strong>Place a stone.</strong> Choose any empty hex. Friendly stones that share an edge form a group.</li><li><strong>Keep a liberty.</strong> Each empty hex touching a group by an edge is a liberty. Fill its last liberty to capture the entire group. The edge of the board provides no liberties.</li><li><strong>Capture first.</strong> Remove surrounded enemy groups, then check your own. Your group must have a liberty, and a placement must leave a board position that has never appeared in this match.</li><li><strong>Pass to finish.</strong> Play out disputed captures before passing. Two consecutive passes end the match. Stones still on the board count as alive.</li><li><strong>Count area.</strong> Score one point per stone and per empty hex in a connected region touching only your color. Mixed or unbordered regions score zero. Captures do not add points. White receives half a point to break ties.</li></ol><p>Keyboard play uses the arrow keys and Enter. Hold Shift with Up or Down for the other diagonal.</p>');
 $('library').onclick = () => {
   show('Game library', games.map(g => '<a class="game-card" href="'+g.path+'">'+icon('hex')+'<span><strong>'+g.title+'</strong><small>'+g.genre+' · '+g.players+'</small></span><span class="coord">Play</span></a>').join(''));
 };
@@ -181,4 +211,69 @@ $('modal').onclick = e => {
   const rect=$('modal').getBoundingClientRect();
   if (e.clientX<rect.left || e.clientX>rect.right || e.clientY<rect.top || e.clientY>rect.bottom) $('modal').close();
 };
+function updateRoom() {
+  if (!online) return;
+  const previous = game;
+  game = online.game;
+  render();
+  if (game.moves.length > previous.moves.length) {
+    clickSound(game.turn === 'black' ? 480 : 360);
+    if (game.ended) {
+      if ($('modal').open) $('modal').close();
+      result();
+    }
+  }
+}
+
+function enterRoom(record) {
+  if ($('modal').open) $('modal').close();
+  localGame = game;
+  online = new OnlineMatch(record, updateRoom, notice);
+  game = online.game;
+  focusIndex = undefined;
+  history.replaceState(null, '', roomURL(record.id));
+  render();
+  online.start();
+}
+
+function leaveRoom() {
+  if ($('modal').open) $('modal').close();
+  online.leave();
+  online = null;
+  game = localGame;
+  localGame = null;
+  focusIndex = undefined;
+  const url = new URL(location.href);
+  url.searchParams.delete('room');
+  history.replaceState(null, '', url);
+  render();
+}
+
+function shareRoom() {
+  const tip = online.record.seat === 'black' && !online.record.guest ? 'Send this link to a friend to give them the White seat.' : 'This is your two-player room.';
+  show('Room details', '<p>'+tip+' Keep both tabs open during the match. Refreshing the same tab restores its seat.</p><label for="roomLink">Room link</label><input id="roomLink" readonly><button id="copyLink" class="primary">Copy invite link</button>');
+  $('roomLink').value = roomURL(online.record.id);
+  $('copyLink').onclick = async () => {
+    try { await navigator.clipboard.writeText($('roomLink').value); $('copyLink').textContent = 'Link copied'; }
+    catch { $('roomLink').focus(); $('roomLink').select(); notice('Copy the selected room link.'); }
+  };
+}
+
+$('invite').onclick = shareRoom;
+$('online').onclick = () => {
+  if (online) { shareRoom(); return; }
+  show('Play online', '<p>Start a room as Black and invite one friend, or join their room as White.</p><label for="onlineSize">Board size</label><select id="onlineSize"><option value="4">Small · 37 hexes</option><option value="5" selected>Standard · 61 hexes</option><option value="6">Large · 91 hexes</option></select><button id="createRoom" class="primary">Create room</button><form id="joinForm" class="join-form"><label for="joinRoom">Have an invite?</label><input id="joinRoom" placeholder="Paste room link or code" required autocomplete="off" spellcheck="false"><button class="outline">Join room</button></form>');
+  $('createRoom').onclick = () => { enterRoom(hostSeat(Number($('onlineSize').value))); shareRoom(); };
+  $('joinForm').onsubmit = event => {
+    event.preventDefault();
+    const id = parseRoom($('joinRoom').value);
+    if (!id) { $('joinRoom').setCustomValidity('Paste a valid Stone and Turn room link or code.'); $('joinRoom').reportValidity(); return; }
+    enterRoom(guestSeat(id));
+  };
+  $('joinRoom').oninput = () => $('joinRoom').setCustomValidity('');
+};
+
 soundButton(); render();
+const restoredRoom = currentRoom();
+if (restoredRoom) enterRoom(restoredRoom);
+

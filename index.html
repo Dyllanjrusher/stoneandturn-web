@@ -5,10 +5,11 @@
 <main id="play">
 <section class="intro"><div><div class="eyebrow"><span class="short-line"></span> STRATEGY GAME</div><h1>Hex Go<span>.</span></h1></div><button class="outline" id="rules"><i data-icon="book"></i> How to play</button></section>
 <div class="layout">
-<section class="board-panel panel" aria-label="Game board"><div class="panel-head"><h2><i data-icon="hex"></i> Game board</h2><span class="live"><b></b> Local match</span></div>
+<section class="board-panel panel" aria-label="Game board"><div class="panel-head"><h2><i data-icon="hex"></i> Game board</h2><span class="live"><b></b><span id="matchType">Local match</span></span></div>
+<section id="roomBar" class="room-bar" hidden aria-label="Online room"><div><strong id="seatLabel"></strong><span id="roomStatus" role="status"></span></div><button class="outline" id="invite">Invite link</button></section>
 <div class="board-surface"><span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span><svg id="board" role="group" aria-label="Hex Go board. Use arrow keys to explore, Enter to play."></svg></div>
 <div class="board-foot"><span><i data-icon="layers"></i><span id="sizeText"></span></span><span id="moveNumber"></span></div></section>
-<aside><section class="panel match"><div class="panel-head"><h2><i data-icon="sliders"></i>Match panel</h2></div><div class="match-body"><div class="turn-banner"><span id="turnStone" class="stone black"></span><div><div class="micro" id="turnLabel">CURRENT TURN</div><strong id="turn"></strong></div></div>
+<aside><section class="panel match"><div class="panel-head"><h2><i data-icon="sliders"></i>Match panel</h2><button class="online-toggle" id="online">Play online</button></div><div class="match-body"><div class="turn-banner"><span id="turnStone" class="stone black"></span><div><div class="micro" id="turnLabel">CURRENT TURN</div><strong id="turn"></strong></div></div>
 <div class="capt-heading"><span class="micro">CAPTURES</span><span class="hairline"></span></div>
 <div class="captures"><div><span class="stone black"></span>Black<strong id="blackCaptures">0</strong></div><div><span class="stone white"></span>White<strong id="whiteCaptures">0</strong></div></div>
 <button class="primary" id="pass"><i data-icon="pass"></i>Pass turn</button><div class="split"><button class="outline" id="undo"><i data-icon="undo"></i>Undo</button><button class="outline" id="new"><i data-icon="plus"></i>New game</button></div></div></section>
